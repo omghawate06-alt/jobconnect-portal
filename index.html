@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobConnect - Find Jobs</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    header {
+      background: #173b70;
+      color: white;
+      padding: 24px 16px;
+      text-align: center;
+    }
+    main {
+      max-width: 600px;
+      margin: 25px auto;
+      padding: 16px;
+    }
+    input, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 13px;
+      margin: 8px 0;
+      border-radius: 6px;
+    }
+    input { border: 1px solid #cbd5e1; }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+    }
+    .job {
+      background: white;
+      margin-top: 12px;
+      padding: 16px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>JobConnect</h1>
+    <p>Find your dream job today!</p>
+  </header>
+
+  <main>
+    <h2>Search Jobs</h2>
+    <input id="search" placeholder="Enter job title">
+    <button onclick="searchJobs()">Search Jobs</button>
+    <div id="results"></div>
+  </main>
+
+  <script>
+    const jobs = [
+      { title: "Web Developer", company: "ABC Technologies", location: "Pune" },
+      { title: "Software Developer", company: "Tech Solutions", location: "Mumbai" },
+      { title: "Data Analyst", company: "DataWorks", location: "Pune" }
+    ];
+
+    function showJobs(list) {
+      const results = document.getElementById("results");
+      results.replaceChildren();
+
+      if (list.length === 0) {
+        results.textContent = "No matching jobs found.";
+        return;
+      }
+
+      list.forEach(job => {
+        const card = document.createElement("div");
+        card.className = "job";
+
+        const title = document.createElement("h3");
+        title.textContent = job.title;
+
+        const details = document.createElement("p");
+        details.textContent = job.company + " • " + job.location;
+
+        card.append(title, details);
+        results.appendChild(card);
+      });
+    }
+
+    function searchJobs() {
+      const query = document.getElementById("search").value
+        .trim().toLowerCase();
+
+      showJobs(jobs.filter(job =>
+        (job.title + " " + job.company + " " + job.location)
+          .toLowerCase().includes(query)
+      ));
+    }
+
+    showJobs(jobs);
+  </script>
+</body>
+</html>
