@@ -19,6 +19,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans
 button{padding:11px 16px;border:0;border-radius:9px;background:var(--primary);color:white;font:inherit;font-weight:700;cursor:pointer}
 button:hover{background:#1d4ed8}
 button:disabled{opacity:.6;cursor:wait}
+button[hidden],span[hidden]{display:none!important}
 .secondary{background:#e2e8f0;color:var(--text)}
 .secondary:hover{background:#cbd5e1}
 .hero{text-align:center;padding:52px 18px 65px;color:white;background:linear-gradient(135deg,#102a56,#2563eb)}
@@ -48,6 +49,18 @@ input:focus,textarea:focus{outline:2px solid #93c5fd;border-color:var(--primary)
 .salary{color:#15803d;font-weight:700}
 .apply-button{width:100%;margin-top:auto}
 .empty-state{padding:30px;text-align:center;background:white;border-radius:12px;color:var(--muted)}
+.tracker-section{padding:30px 0 55px;scroll-margin-top:20px}
+.tracker-panel{background:white;border:1px solid var(--border);border-radius:15px;padding:22px}
+.tracker-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.tracker-heading h2{margin:0;font-size:25px}
+.tracker-heading p{color:var(--muted);font-size:14px}
+.application-card{border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:14px}
+.application-card h3{margin:0 0 4px}
+.application-meta{color:var(--muted);font-size:13px}
+.status-badge{display:inline-block;padding:5px 10px;margin-top:10px;border-radius:20px;background:#dbeafe;color:#1d4ed8;font-size:12px;font-weight:800}
+.status-accepted,.status-shortlisted{background:#dcfce7;color:#166534}
+.status-rejected{background:#fee2e2;color:#991b1b}
+.status-under-review{background:#fef3c7;color:#92400e}
 .modal{display:none;position:fixed;inset:0;z-index:1000;padding:18px;overflow-y:auto;background:#0f172a99;align-items:center;justify-content:center}
 .modal.open{display:flex}
 .form-card{width:100%;max-width:520px;margin:auto;padding:24px;background:white;border-radius:16px;box-shadow:0 20px 60px #0003}
@@ -74,6 +87,7 @@ textarea{min-height:90px;resize:vertical}
   <a class="brand" href="#">Job<span>Connect</span></a>
   <div class="nav-actions">
    <a class="nav-link" href="#jobs">Explore Jobs</a>
+   <button type="button" id="myApplicationsBtn" hidden>My Applications</button>
    <span id="welcomeUser" hidden></span>
    <button type="button" id="loginBtn">Login</button>
    <button type="button" id="registerBtn">Register</button>
@@ -98,6 +112,7 @@ textarea{min-height:90px;resize:vertical}
    <button type="button" id="searchBtn" class="search-button">Search Jobs</button>
   </div>
  </section>
+
  <section class="container jobs-section" id="jobs">
   <div class="section-heading">
    <h2>Explore opportunities</h2>
@@ -106,9 +121,22 @@ textarea{min-height:90px;resize:vertical}
   <p id="status" role="status" aria-live="polite">Loading jobs...</p>
   <div id="results" class="job-grid"></div>
  </section>
+
+ <section class="container tracker-section" id="myApplications" hidden>
+  <div class="tracker-panel">
+   <div class="tracker-heading">
+    <div>
+     <h2>My Applications</h2>
+     <p>Track the progress of your job applications.</p>
+    </div>
+    <button type="button" id="refreshApplicationsBtn" class="secondary">Refresh</button>
+   </div>
+   <p id="trackerMessage" role="status" aria-live="polite">Your applications will appear here.</p>
+   <div id="applicationResults"></div>
+  </div>
+ </section>
 </main>
 
-<!-- Login and registration -->
 <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
  <div class="form-card">
   <div class="form-header">
@@ -142,7 +170,6 @@ textarea{min-height:90px;resize:vertical}
  </div>
 </div>
 
-<!-- Job application -->
 <div class="modal" id="applicationModal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
  <div class="form-card">
   <div class="form-header">
@@ -165,7 +192,7 @@ textarea{min-height:90px;resize:vertical}
    <div class="form-group">
     <label for="resume">Resume (PDF)</label>
     <input id="resume" type="file" accept=".pdf,application/pdf">
-    <small>PDF only, maximum 5 MB. This version checks the file but does not upload it.</small>
+    <small>PDF only, maximum 5 MB. Resume file upload is not enabled yet.</small>
    </div>
    <div class="form-group">
     <label for="coverLetter">Cover Letter</label>
@@ -191,6 +218,7 @@ const AUTH_URL = BASE_URL + "/api/auth";
 let jobs = [];
 let selectedJob = null;
 let authMode = "login";
+let currentUser = null;
 
 const $ = id => document.getElementById(id);
 const authModal = $("authModal");
@@ -220,11 +248,17 @@ function setAuthStatus(message, error = false) {
 }
 
 function updateNav(user) {
+ currentUser = user || null;
  $("loginBtn").hidden = !!user;
  $("registerBtn").hidden = !!user;
  $("logoutBtn").hidden = !user;
  $("welcomeUser").hidden = !user;
+ $("myApplicationsBtn").hidden = !user;
  $("welcomeUser").textContent = user ? "Hi, " + user.name : "";
+ if (!user) {
+  $("myApplications").hidden = true;
+  $("applicationResults").replaceChildren();
+ }
 }
 
 function showAuth(mode) {
@@ -234,7 +268,7 @@ function showAuth(mode) {
  const registering = mode === "register";
  $("authTitle").textContent = registering ? "Create Account" : "Login";
  $("authSubtitle").textContent = registering ? "Join JobConnect today." : "Welcome back to JobConnect.";
- $("authSubmit").textContent = registering ? "Create Account" : "Login";
+ authSubmit.textContent = registering ? "Create Account" : "Login";
  $("nameGroup").hidden = !registering;
  $("authName").required = registering;
  $("confirmGroup").hidden = !registering;
@@ -254,7 +288,7 @@ authModal.addEventListener("click", e => { if (e.target === authModal) authModal
 
 async function apiRequest(url, options = {}) {
  const headers = { ...(options.headers || {}) };
- if (options.body) headers["Content-Type"] = "application/json";
+ if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
  const token = getToken();
  if (token) headers.Authorization = "Bearer " + token;
 
@@ -291,13 +325,30 @@ authForm.addEventListener("submit", async e => {
    body: JSON.stringify(body)
   });
 
+  if (registering && !data.token) {
+   setAuthStatus("Account created successfully! Please log in.");
+   authMode = "login";
+   $("authTitle").textContent = "Account Created";
+   $("authSubtitle").textContent = "Now log in to track your applications.";
+   $("authSubmit").textContent = "Login";
+   $("nameGroup").hidden = true;
+   $("authName").required = false;
+   $("confirmGroup").hidden = true;
+   $("confirmPassword").required = false;
+   $("authPassword").value = "";
+   $("confirmPassword").value = "";
+   $("switchPrompt").textContent = "Need another account?";
+   $("switchAuth").textContent = "Register";
+   return;
+  }
+
   if (!data.token) throw new Error("The server did not return a login token. Check the backend deployment.");
 
   setToken(data.token);
-  const user = data.user || { name: registering ? body.name : email.split("@")[0], email };
+  const user = data.user || { name: email.split("@")[0], email };
   updateNav(user);
   authModal.classList.remove("open");
-  alert(registering ? "Account created successfully!" : "Login successful!");
+  alert(registering ? "Account created and logged in!" : "Login successful!");
  } catch (error) {
   setAuthStatus(error.message || "Unable to connect. Please try again.", true);
  } finally {
@@ -315,7 +366,6 @@ $("logoutBtn").addEventListener("click", () => {
 async function checkSession() {
  const token = getToken();
  if (!token) { updateNav(null); return; }
-
  try {
   const data = await apiRequest(AUTH_URL + "/me");
   if (data.user) updateNav(data.user);
@@ -327,9 +377,18 @@ async function checkSession() {
 }
 
 function openApplication(job) {
+ if (!getToken()) {
+  alert("Please log in before applying for a job.");
+  showAuth("login");
+  return;
+ }
  selectedJob = job;
  $("selectedJob").textContent = (job.title || "Job") + " at " + (job.company || "Company");
  appForm.reset();
+ if (currentUser) {
+  $("applicantName").value = currentUser.name || "";
+  $("email").value = currentUser.email || "";
+ }
  formStatus.textContent = "";
  submitApplication.disabled = false;
  submitApplication.textContent = "Submit Application";
@@ -367,6 +426,12 @@ appForm.addEventListener("submit", async e => {
  e.preventDefault();
  if (!selectedJob || !appForm.reportValidity()) return;
 
+ if (!getToken()) {
+  formStatus.textContent = "Please log in before submitting your application.";
+  formStatus.style.color = "#b91c1c";
+  return;
+ }
+
  const resume = $("resume").files[0];
  if (resume && (resume.type !== "application/pdf" || !resume.name.toLowerCase().endsWith(".pdf") || resume.size > 5 * 1024 * 1024)) {
   formStatus.textContent = "Please select a valid PDF under 5 MB.";
@@ -387,19 +452,19 @@ appForm.addEventListener("submit", async e => {
  formStatus.textContent = "Please wait...";
 
  try {
-  const response = await fetch(APPLICATION_URL, {
+  await apiRequest(APPLICATION_URL, {
    method: "POST",
-   headers: { "Content-Type": "application/json" },
    body: JSON.stringify(payload)
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.message || "Application could not be submitted.");
 
-  formStatus.textContent = "Application submitted successfully!";
+  formStatus.textContent = "Application submitted! Its initial status is Submitted.";
   formStatus.style.color = "#15803d";
   appForm.reset();
   selectedJob = null;
   submitApplication.textContent = "Submitted!";
+
+  await loadMyApplications();
+
   setTimeout(() => {
    applicationModal.classList.remove("open");
    submitApplication.disabled = false;
@@ -485,7 +550,7 @@ async function loadJobs() {
   jobs = data;
   $("status").textContent = jobs.length + (jobs.length === 1 ? " job available" : " jobs available");
   showJobs(jobs);
- } catch (error) {
+ } catch {
   $("status").textContent = "Unable to load jobs. Please refresh and try again.";
   $("status").style.color = "#b91c1c";
  }
@@ -502,8 +567,77 @@ function searchJobs() {
 $("searchBtn").addEventListener("click", searchJobs);
 $("search").addEventListener("keydown", e => { if (e.key === "Enter") searchJobs(); });
 
+function formatDate(value) {
+ if (!value) return "Date unavailable";
+ const date = new Date(value);
+ return Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleDateString();
+}
+
+function statusClass(status) {
+ return "status-" + String(status || "Submitted").toLowerCase().replace(/\s+/g, "-");
+}
+
+async function loadMyApplications() {
+ const token = getToken();
+ if (!token) {
+  $("trackerMessage").textContent = "Please log in to view your applications.";
+  $("applicationResults").replaceChildren();
+  return;
+ }
+
+ $("trackerMessage").textContent = "Loading your applications...";
+ $("applicationResults").replaceChildren();
+
+ try {
+  const data = await apiRequest(APPLICATION_URL + "/my");
+  const applications = Array.isArray(data) ? data : data.applications;
+
+  if (!Array.isArray(applications)) {
+   throw new Error("Unexpected response from the applications API.");
+  }
+
+  if (!applications.length) {
+   $("trackerMessage").textContent = "You haven't submitted any applications yet. Apply for a job to see it here.";
+   return;
+  }
+
+  $("trackerMessage").textContent = applications.length +
+   (applications.length === 1 ? " application found." : " applications found.");
+
+  applications.forEach(application => {
+   const card = document.createElement("article");
+   card.className = "application-card";
+
+   const title = document.createElement("h3");
+   title.textContent = application.jobTitle || "Job application";
+
+   const date = document.createElement("p");
+   date.className = "application-meta";
+   date.textContent = "Applied on: " + formatDate(application.appliedAt);
+
+   const badge = document.createElement("span");
+   badge.className = "status-badge " + statusClass(application.status);
+   badge.textContent = application.status || "Submitted";
+
+   card.append(title, date, badge);
+   $("applicationResults").appendChild(card);
+  });
+ } catch (error) {
+  $("trackerMessage").textContent = error.message || "Could not load applications. Please try again.";
+ }
+}
+
+$("myApplicationsBtn").addEventListener("click", async () => {
+ $("myApplications").hidden = false;
+ $("myApplications").scrollIntoView({behavior:"smooth",block:"start"});
+ await loadMyApplications();
+});
+
+$("refreshApplicationsBtn").addEventListener("click", loadMyApplications);
+
 checkSession();
 loadJobs();
 </script>
 </body>
 </html>
+
