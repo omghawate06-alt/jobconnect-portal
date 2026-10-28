@@ -3,6 +3,14 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const applicationSchema = new mongoose.Schema({
+  applicantName: { type: String, required: true },
+  email: { type: String, required: true },
+  jobTitle: { type: String, required: true },
+  appliedAt: { type: Date, default: Date.now }
+});
+
+const Application = mongoose.model("Application", applicationSchema);
 
 const app = express();
 
