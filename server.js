@@ -12,9 +12,13 @@ const scrypt = promisify(crypto.scrypt);
 app.use(cors());
 app.use(express.json({ limit: "20kb" }));
 
-// ---------------- SECURITY ----------------
+// SECURITY
+const JWT_SECRET =
+  typeof process.env.JWT_SECRET === "string"
+    ? process.env.JWT_SECRET.trim()
+    : "";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+console.log("JWT_SECRET configured:", JWT_SECRET.length >= 32);
 
 function createToken(user) {
   const now = Math.floor(Date.now() / 1000);
@@ -41,13 +45,14 @@ function createToken(user) {
 }
 
 function requireLogin(req, res, next) {
-  if (!JWT_SECRET) {
+  if (JWT_SECRET.length < 32) {
     return res.status(503).json({
       message: "Login security is not configured."
     });
   }
 
   const parts = (req.headers.authorization || "").split(" ");
+
   if (parts.length !== 2 || parts[0] !== "Bearer") {
     return res.status(401).json({
       message: "Please log in first."
@@ -55,6 +60,7 @@ function requireLogin(req, res, next) {
   }
 
   const tokenParts = parts[1].split(".");
+
   if (tokenParts.length !== 3) {
     return res.status(401).json({
       message: "Invalid login token."
@@ -67,6 +73,7 @@ function requireLogin(req, res, next) {
       .createHmac("sha256", JWT_SECRET)
       .update(content)
       .digest();
+
     const actual = Buffer.from(tokenParts[2], "base64url");
 
     if (
@@ -81,6 +88,7 @@ function requireLogin(req, res, next) {
     const header = JSON.parse(
       Buffer.from(tokenParts[0], "base64url").toString()
     );
+
     const payload = JSON.parse(
       Buffer.from(tokenParts[1], "base64url").toString()
     );
@@ -106,26 +114,7 @@ function requireLogin(req, res, next) {
   }
 }
 
-async function requireAdmin(req, res, next) {
-  try {
-    const user = await User.findById(req.userId);
-
-    if (!user || user.role !== "admin") {
-      return res.status(403).json({
-        message: "Administrator access required."
-      });
-    }
-
-    next();
-  } catch {
-    res.status(500).json({
-      message: "Could not verify administrator access."
-    });
-  }
-}
-
-// ---------------- DATABASE MODELS ----------------
-
+// DATABASE MODELS
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -209,19 +198,22 @@ const applicationSchema = new mongoose.Schema({
 
 const Application = mongoose.model("Application", applicationSchema);
 
-// ---------------- DATABASE CONNECTION ----------------
+// DATABASE CONNECTION
+if (!process.env.MONGODB_URI) {
+  console.error("MONGODB_URI is missing in Render Environment.");
+} else {
+  mongoose
+    .connect(process.env.MONGODB_URI, { dbName: "jobconnect" })
+    .then(() => console.log("MongoDB connected successfully"))
+    .catch(err =>
+      console.error("MongoDB connection error:", err.message)
+    );
+}
 
-mongoose.connect(process.env.MONGODB_URI, {
-  dbName: "jobconnect"
-})
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch(err => console.error("MongoDB connection error:", err.message));
-
-// ---------------- REGISTER ----------------
-
+// REGISTER
 app.post("/api/auth/register", async (req, res) => {
   try {
-    if (!JWT_SECRET) {
+    if (JWT_SECRET.length < 32) {
       return res.status(503).json({
         message: "Login security is not configured."
       });
@@ -292,11 +284,10 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-// ---------------- LOGIN ----------------
-
+// LOGIN
 app.post("/api/auth/login", async (req, res) => {
   try {
-    if (!JWT_SECRET) {
+    if (JWT_SECRET.length < 32) {
       return res.status(503).json({
         message: "Login security is not configured."
       });
@@ -362,8 +353,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// ---------------- CURRENT USER ----------------
-
+// CURRENT USER
 app.get("/api/auth/me", requireLogin, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -388,14 +378,12 @@ app.get("/api/auth/me", requireLogin, async (req, res) => {
   }
 });
 
-// ---------------- HOMEPAGE ----------------
-
+// HOMEPAGE
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-// ---------------- JOBS ----------------
-
+// JOBS
 app.get("/api/jobs", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -410,31 +398,45 @@ app.get("/api/jobs", async (req, res) => {
       .toArray();
 
     res.json(jobs);
-  } catch {
+  } catch (error) {
+    console.error("Fetch jobs error:", error.message);
     res.status(500).json({
       message: "Could not fetch jobs from MongoDB."
     });
   }
 });
 
-// ---------------- SUBMIT APPLICATION ----------------
+// ADMIN CHECK
+async function requireAdmin(req, res, next) {
+  try {
+    const user = await User.findById(req.userId);
 
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({
+        message: "Administrator access required."
+      });
+    }
+
+    next();
+  } catch {
+    res.status(500).json({
+      message: "Could not verify administrator access."
+    });
+  }
+}
+
+// SUBMIT APPLICATION
 app.post("/api/applications", requireLogin, async (req, res) => {
   try {
-    const { applicantName, email, jobTitle } = req.body || {};
+    const { jobTitle } = req.body || {};
 
     if (
-      typeof applicantName !== "string" ||
-      !applicantName.trim() ||
-      applicantName.trim().length > 100 ||
-      typeof email !== "string" ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
       typeof jobTitle !== "string" ||
       !jobTitle.trim() ||
       jobTitle.trim().length > 200
     ) {
       return res.status(400).json({
-        message: "Enter a valid name, email, and job title."
+        message: "Enter a valid job title."
       });
     }
 
@@ -445,14 +447,13 @@ app.post("/api/applications", requireLogin, async (req, res) => {
     }
 
     const user = await User.findById(req.userId);
+
     if (!user) {
       return res.status(401).json({
         message: "Please log in again."
       });
     }
 
-    // The authenticated user's ID and email are taken from the account,
-    // not trusted from the browser.
     const application = await Application.create({
       userId: user._id,
       applicantName: user.name,
@@ -478,8 +479,7 @@ app.post("/api/applications", requireLogin, async (req, res) => {
   }
 });
 
-// ---------------- MY APPLICATIONS ----------------
-
+// MY APPLICATIONS
 app.get("/api/applications/my", requireLogin, async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -512,9 +512,7 @@ app.get("/api/applications/my", requireLogin, async (req, res) => {
   }
 });
 
-// ---------------- ADMIN: UPDATE STATUS ----------------
-
-// Only a database user explicitly assigned role "admin" can use this.
+// ADMIN: UPDATE APPLICATION STATUS
 app.patch(
   "/api/applications/:id/status",
   requireLogin,
@@ -565,9 +563,9 @@ app.patch(
   }
 );
 
-// ---------------- START SERVER ----------------
-
+// START SERVER
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
