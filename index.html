@@ -1,669 +1,509 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JobConnect | Find Your Dream Job</title>
-
-  <style>
-    * { box-sizing: border-box; }
-
-    :root {
-      --primary: #2563eb;
-      --dark: #173b70;
-      --text: #172033;
-      --muted: #64748b;
-      --bg: #f4f7fb;
-      --border: #e2e8f0;
-    }
-
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-
-    .navbar {
-      background: white;
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
-    }
-
-    .nav-inner {
-      max-width: 1100px;
-      margin: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand {
-      font-size: 23px;
-      font-weight: 800;
-      color: var(--dark);
-      text-decoration: none;
-    }
-
-    .brand span { color: var(--primary); }
-
-    .nav-link {
-      color: var(--muted);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .hero {
-      text-align: center;
-      padding: 55px 20px 65px;
-      color: white;
-      background: linear-gradient(135deg, #102a56, #2563eb);
-    }
-
-    .hero-tag {
-      display: inline-block;
-      padding: 6px 13px;
-      border-radius: 30px;
-      background: #ffffff20;
-      font-size: 13px;
-    }
-
-    .hero h1 {
-      margin: 18px auto 12px;
-      font-size: clamp(32px, 7vw, 52px);
-      line-height: 1.15;
-    }
-
-    .hero h1 span { color: #bfdbfe; }
-
-    .hero p {
-      max-width: 540px;
-      margin: auto;
-      color: #e0eaff;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: auto;
-      padding: 0 20px;
-    }
-
-    .search-section {
-      margin-top: -28px;
-      position: relative;
-    }
-
-    .search-box {
-      display: flex;
-      gap: 12px;
-      align-items: end;
-      padding: 16px;
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 12px 35px #0f172a15;
-    }
-
-    .search-field { flex: 1; min-width: 0; }
-
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 9px;
-      background: white;
-      color: var(--text);
-      font: inherit;
-    }
-
-    input:focus, textarea:focus, select:focus {
-      outline: 2px solid #93c5fd;
-      border-color: var(--primary);
-    }
-
-    button {
-      padding: 12px 18px;
-      border: 0;
-      border-radius: 9px;
-      background: var(--primary);
-      color: white;
-      font: inherit;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    button:hover { background: #1d4ed8; }
-    button:disabled { opacity: 0.6; cursor: wait; }
-
-    .jobs-section {
-      padding-top: 45px;
-      padding-bottom: 55px;
-    }
-
-    .section-heading { margin-bottom: 20px; }
-
-    .section-heading h2 {
-      margin: 0;
-      font-size: 27px;
-    }
-
-    .section-heading p, #status {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .job-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-    .job {
-      display: flex;
-      min-width: 0;
-      flex-direction: column;
-      padding: 22px;
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 15px;
-      box-shadow: 0 5px 18px #0f172a09;
-    }
-
-    .job-top {
-      display: flex;
-      gap: 13px;
-      margin-bottom: 15px;
-    }
-
-    .company-icon {
-      flex: 0 0 48px;
-      width: 48px;
-      height: 48px;
-      display: grid;
-      place-items: center;
-      border-radius: 12px;
-      background: #eff6ff;
-      color: var(--primary);
-      font-size: 23px;
-      font-weight: 800;
-    }
-
-    .job h3 { margin: 0; font-size: 19px; }
-    .company-name { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
-    .job-description { flex-grow: 1; color: #475569; font-size: 14px; }
-
-    .job-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .tag {
-      padding: 5px 9px;
-      border-radius: 7px;
-      background: #f1f5f9;
-      color: #475569;
-      font-size: 12px;
-    }
-
-    .salary {
-      color: #15803d;
-      font-weight: 700;
-    }
-
-    .apply-button { width: 100%; margin-top: auto; }
-
-    .empty-state {
-      padding: 30px;
-      text-align: center;
-      background: white;
-      border-radius: 12px;
-      color: var(--muted);
-    }
-
-    /* Application form popup */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      padding: 20px;
-      overflow-y: auto;
-      background: #0f172a99;
-      align-items: flex-start;
-      justify-content: center;
-    }
-
-    .modal.open { display: flex; }
-
-    .form-card {
-      width: 100%;
-      max-width: 560px;
-      margin: auto;
-      padding: 24px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px #0003;
-    }
-
-    .form-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .form-header h2 { margin: 0; font-size: 24px; }
-    .form-header p { margin: 5px 0 0; color: var(--muted); }
-
-    .close-button {
-      padding: 5px 12px;
-      background: #f1f5f9;
-      color: var(--text);
-      font-size: 24px;
-    }
-
-    .form-group { margin-bottom: 15px; }
-
-    .form-group small {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .form-actions button { flex: 1; }
-
-    .cancel-button {
-      background: #e2e8f0;
-      color: var(--text);
-    }
-
-    .cancel-button:hover { background: #cbd5e1; }
-
-    #formStatus {
-      margin-top: 14px;
-      font-size: 14px;
-    }
-
-    .footer {
-      padding: 25px 20px;
-      text-align: center;
-      background: white;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    @media (max-width: 650px) {
-      .hero { padding: 42px 18px 55px; }
-      .container { padding-left: 16px; padding-right: 16px; }
-      .search-box { flex-direction: column; align-items: stretch; }
-      .search-button { width: 100%; }
-      .job-grid { grid-template-columns: 1fr; }
-      .jobs-section { padding-top: 35px; }
-      .form-card { padding: 18px; }
-      .form-actions { flex-direction: column; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobConnect | Find Your Dream Job</title>
+<style>
+*{box-sizing:border-box}
+:root{--primary:#2563eb;--dark:#173b70;--text:#172033;--muted:#64748b;--bg:#f4f7fb;--border:#e2e8f0}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+.navbar{background:white;border-bottom:1px solid var(--border);padding:14px 18px}
+.nav-inner{max-width:1100px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-size:23px;font-weight:800;color:var(--dark);text-decoration:none}
+.brand span{color:var(--primary)}
+.nav-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nav-link{color:var(--muted);text-decoration:none;font-weight:600}
+button{padding:11px 16px;border:0;border-radius:9px;background:var(--primary);color:white;font:inherit;font-weight:700;cursor:pointer}
+button:hover{background:#1d4ed8}
+button:disabled{opacity:.6;cursor:wait}
+.secondary{background:#e2e8f0;color:var(--text)}
+.secondary:hover{background:#cbd5e1}
+.hero{text-align:center;padding:52px 18px 65px;color:white;background:linear-gradient(135deg,#102a56,#2563eb)}
+.hero-tag{display:inline-block;padding:6px 13px;border-radius:30px;background:#ffffff20;font-size:13px}
+.hero h1{margin:18px auto 12px;font-size:clamp(32px,7vw,52px);line-height:1.15}
+.hero h1 span{color:#bfdbfe}
+.hero p{max-width:540px;margin:auto;color:#e0eaff}
+.container{max-width:1100px;margin:auto;padding:0 18px}
+.search-section{margin-top:-28px;position:relative}
+.search-box{display:flex;gap:12px;align-items:end;padding:16px;background:white;border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 35px #0f172a15}
+.search-field{flex:1;min-width:0}
+label{display:block;margin-bottom:6px;font-size:14px;font-weight:700}
+input,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;background:white;color:var(--text);font:inherit}
+input:focus,textarea:focus{outline:2px solid #93c5fd;border-color:var(--primary)}
+.jobs-section{padding-top:40px;padding-bottom:55px}
+.section-heading h2{margin:0;font-size:27px}
+.section-heading p,#status{color:var(--muted);font-size:14px}
+.job-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.job{display:flex;min-width:0;flex-direction:column;padding:22px;background:white;border:1px solid var(--border);border-radius:15px;box-shadow:0 5px 18px #0f172a09}
+.job-top{display:flex;gap:13px;margin-bottom:15px}
+.company-icon{flex:0 0 48px;width:48px;height:48px;display:grid;place-items:center;border-radius:12px;background:#eff6ff;color:var(--primary);font-size:23px;font-weight:800}
+.job h3{margin:0;font-size:19px}
+.company-name{margin:4px 0 0;color:var(--muted);font-size:14px}
+.job-description{flex-grow:1;color:#475569;font-size:14px}
+.job-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.tag{padding:5px 9px;border-radius:7px;background:#f1f5f9;color:#475569;font-size:12px}
+.salary{color:#15803d;font-weight:700}
+.apply-button{width:100%;margin-top:auto}
+.empty-state{padding:30px;text-align:center;background:white;border-radius:12px;color:var(--muted)}
+.modal{display:none;position:fixed;inset:0;z-index:1000;padding:18px;overflow-y:auto;background:#0f172a99;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.form-card{width:100%;max-width:520px;margin:auto;padding:24px;background:white;border-radius:16px;box-shadow:0 20px 60px #0003}
+.form-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px}
+.form-header h2{margin:0;font-size:24px}
+.form-header p{margin:5px 0;color:var(--muted)}
+.close-button{padding:4px 12px;background:#f1f5f9;color:var(--text);font-size:24px}
+.form-group{margin-bottom:14px}
+.form-group small{color:var(--muted);font-size:12px}
+textarea{min-height:90px;resize:vertical}
+.form-actions{display:flex;gap:10px;margin-top:18px}
+.form-actions button{flex:1}
+#authStatus,#formStatus{font-size:14px;overflow-wrap:anywhere}
+.switch-text{text-align:center;font-size:14px}
+.text-button{padding:0;background:none;color:var(--primary);text-decoration:underline}
+.text-button:hover{background:none}
+.footer{padding:25px 18px;text-align:center;background:white;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+@media(max-width:650px){.hero{padding:42px 18px 55px}.search-box{flex-direction:column;align-items:stretch}.search-button{width:100%}.job-grid{grid-template-columns:1fr}.form-card{padding:18px}.form-actions{flex-direction:column}}
+</style>
 </head>
-
 <body>
-  <nav class="navbar">
-    <div class="nav-inner">
-      <a class="brand" href="#">Job<span>Connect</span></a>
-      <a class="nav-link" href="#jobs">Explore Jobs</a>
-    </div>
-  </nav>
-
-  <header class="hero">
-    <span class="hero-tag">YOUR NEXT OPPORTUNITY STARTS HERE</span>
-    <h1>Find a job you <span>love.</span></h1>
-    <p>Explore opportunities, discover your potential, and take the next step in your career with JobConnect.</p>
-  </header>
-
-  <main>
-    <section class="container search-section" aria-label="Search jobs">
-      <div class="search-box">
-        <div class="search-field">
-          <label for="search">JOB TITLE, COMPANY OR LOCATION</label>
-          <input id="search" type="search" placeholder="e.g. Frontend Developer, Pune">
-        </div>
-        <button type="button" id="searchBtn" class="search-button">Search Jobs</button>
-      </div>
-    </section>
-
-    <section class="container jobs-section" id="jobs">
-      <div class="section-heading">
-        <h2>Explore opportunities</h2>
-        <p>Find your next career move.</p>
-      </div>
-      <p id="status" role="status" aria-live="polite">Loading jobs...</p>
-      <div id="results" class="job-grid"></div>
-    </section>
-  </main>
-
-  <div class="modal" id="applicationModal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
-    <div class="form-card">
-      <div class="form-header">
-        <div>
-          <h2 id="formTitle">Apply for this job</h2>
-          <p id="selectedJob">Complete your application below.</p>
-        </div>
-        <button type="button" class="close-button" id="closeModal" aria-label="Close form">&times;</button>
-      </div>
-
-      <form id="applicationForm">
-        <div class="form-group">
-          <label for="applicantName">Full Name *</label>
-          <input id="applicantName" name="applicantName" type="text" autocomplete="name" required maxlength="100" placeholder="Enter your full name">
-        </div>
-
-        <div class="form-group">
-          <label for="email">Email Address *</label>
-          <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com">
-        </div>
-
-        <div class="form-group">
-          <label for="phone">Phone Number *</label>
-          <input id="phone" name="phone" type="tel" autocomplete="tel" required pattern="[0-9+() -]{7,20}" maxlength="20" placeholder="Enter your phone number">
-        </div>
-
-        <div class="form-group">
-          <label for="resume">Resume (PDF)</label>
-          <input id="resume" name="resume" type="file" accept=".pdf,application/pdf">
-          <small>PDF only, maximum 5 MB. The file is not uploaded in this version.</small>
-        </div>
-
-        <div class="form-group">
-          <label for="coverLetter">Cover Letter</label>
-          <textarea id="coverLetter" name="coverLetter" maxlength="3000" placeholder="Tell the employer why you are suitable for this job..."></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" id="submitApplication">Submit Application</button>
-          <button type="button" class="cancel-button" id="cancelApplication">Cancel</button>
-        </div>
-
-        <p id="formStatus" role="status" aria-live="polite"></p>
-      </form>
-    </div>
+<nav class="navbar">
+ <div class="nav-inner">
+  <a class="brand" href="#">Job<span>Connect</span></a>
+  <div class="nav-actions">
+   <a class="nav-link" href="#jobs">Explore Jobs</a>
+   <span id="welcomeUser" hidden></span>
+   <button type="button" id="loginBtn">Login</button>
+   <button type="button" id="registerBtn">Register</button>
+   <button type="button" id="logoutBtn" hidden class="secondary">Logout</button>
   </div>
+ </div>
+</nav>
 
-  <footer class="footer">
-    <strong>JobConnect</strong> · Connecting talent with opportunity.
-  </footer>
+<header class="hero">
+ <span class="hero-tag">YOUR NEXT OPPORTUNITY STARTS HERE</span>
+ <h1>Find a job you <span>love.</span></h1>
+ <p>Explore opportunities, discover your potential, and take the next step in your career with JobConnect.</p>
+</header>
 
-  <script>
-    const API_URL = "https://jobconnect-portal-2ik0.onrender.com/api/jobs";
-    const APPLICATION_URL = "https://jobconnect-portal-2ik0.onrender.com/api/applications";
+<main>
+ <section class="container search-section" aria-label="Search jobs">
+  <div class="search-box">
+   <div class="search-field">
+    <label for="search">JOB TITLE, COMPANY OR LOCATION</label>
+    <input id="search" type="search" placeholder="e.g. Developer, Pune">
+   </div>
+   <button type="button" id="searchBtn" class="search-button">Search Jobs</button>
+  </div>
+ </section>
+ <section class="container jobs-section" id="jobs">
+  <div class="section-heading">
+   <h2>Explore opportunities</h2>
+   <p>Find your next career move.</p>
+  </div>
+  <p id="status" role="status" aria-live="polite">Loading jobs...</p>
+  <div id="results" class="job-grid"></div>
+ </section>
+</main>
 
-    let jobs = [];
-    let selectedJob = null;
+<!-- Login and registration -->
+<div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+ <div class="form-card">
+  <div class="form-header">
+   <div><h2 id="authTitle">Login</h2><p id="authSubtitle">Welcome back to JobConnect.</p></div>
+   <button type="button" class="close-button" id="closeAuth" aria-label="Close">&times;</button>
+  </div>
+  <form id="authForm">
+   <div class="form-group" id="nameGroup" hidden>
+    <label for="authName">Full Name *</label>
+    <input id="authName" type="text" autocomplete="name" maxlength="100" placeholder="Your full name">
+   </div>
+   <div class="form-group">
+    <label for="authEmail">Email Address *</label>
+    <input id="authEmail" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com">
+   </div>
+   <div class="form-group">
+    <label for="authPassword">Password *</label>
+    <input id="authPassword" type="password" autocomplete="current-password" minlength="8" maxlength="128" required placeholder="At least 8 characters">
+    <small>Use a unique password you don't use on other websites.</small>
+   </div>
+   <div class="form-group" id="confirmGroup" hidden>
+    <label for="confirmPassword">Confirm Password *</label>
+    <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="Enter password again">
+   </div>
+   <button type="submit" id="authSubmit" style="width:100%">Login</button>
+   <p id="authStatus" role="status" aria-live="polite"></p>
+  </form>
+  <p class="switch-text"><span id="switchPrompt">Don't have an account?</span>
+   <button type="button" class="text-button" id="switchAuth">Register</button>
+  </p>
+ </div>
+</div>
 
-    const modal = document.getElementById("applicationModal");
-    const form = document.getElementById("applicationForm");
-    const formStatus = document.getElementById("formStatus");
-    const submitButton = document.getElementById("submitApplication");
+<!-- Job application -->
+<div class="modal" id="applicationModal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+ <div class="form-card">
+  <div class="form-header">
+   <div><h2 id="formTitle">Apply for this job</h2><p id="selectedJob">Complete your application below.</p></div>
+   <button type="button" class="close-button" id="closeModal" aria-label="Close form">&times;</button>
+  </div>
+  <form id="applicationForm">
+   <div class="form-group">
+    <label for="applicantName">Full Name *</label>
+    <input id="applicantName" autocomplete="name" required maxlength="100">
+   </div>
+   <div class="form-group">
+    <label for="email">Email Address *</label>
+    <input id="email" type="email" autocomplete="email" required maxlength="254">
+   </div>
+   <div class="form-group">
+    <label for="phone">Phone Number *</label>
+    <input id="phone" type="tel" autocomplete="tel" required pattern="[0-9+() -]{7,20}" maxlength="20">
+   </div>
+   <div class="form-group">
+    <label for="resume">Resume (PDF)</label>
+    <input id="resume" type="file" accept=".pdf,application/pdf">
+    <small>PDF only, maximum 5 MB. This version checks the file but does not upload it.</small>
+   </div>
+   <div class="form-group">
+    <label for="coverLetter">Cover Letter</label>
+    <textarea id="coverLetter" maxlength="3000" placeholder="Why are you suitable for this job?"></textarea>
+   </div>
+   <div class="form-actions">
+    <button type="submit" id="submitApplication">Submit Application</button>
+    <button type="button" class="secondary" id="cancelApplication">Cancel</button>
+   </div>
+   <p id="formStatus" role="status" aria-live="polite"></p>
+  </form>
+ </div>
+</div>
 
-    function openApplication(job) {
-      selectedJob = job;
-      document.getElementById("selectedJob").textContent =
-        (job.title || "Job") + " at " + (job.company || "Company");
+<footer class="footer"><strong>JobConnect</strong> · Connecting talent with opportunity.</footer>
 
-      form.reset();
-      formStatus.textContent = "";
-      formStatus.style.color = "";
-      submitButton.disabled = false;
-      submitButton.textContent = "Submit Application";
-      modal.classList.add("open");
-      document.getElementById("applicantName").focus();
-    }
+<script>
+const BASE_URL = "https://jobconnect-portal-2ik0.onrender.com";
+const API_URL = BASE_URL + "/api/jobs";
+const APPLICATION_URL = BASE_URL + "/api/applications";
+const AUTH_URL = BASE_URL + "/api/auth";
 
-    function closeApplication() {
-      if (!submitButton.disabled) {
-        modal.classList.remove("open");
-      }
-    }
+let jobs = [];
+let selectedJob = null;
+let authMode = "login";
 
-    document.getElementById("closeModal").addEventListener("click", closeApplication);
-    document.getElementById("cancelApplication").addEventListener("click", closeApplication);
+const $ = id => document.getElementById(id);
+const authModal = $("authModal");
+const applicationModal = $("applicationModal");
+const authForm = $("authForm");
+const authStatus = $("authStatus");
+const authSubmit = $("authSubmit");
+const appForm = $("applicationForm");
+const formStatus = $("formStatus");
+const submitApplication = $("submitApplication");
 
-    modal.addEventListener("click", function(event) {
-      if (event.target === modal) closeApplication();
-    });
+function getToken() {
+ try { return sessionStorage.getItem("jobconnect_token"); }
+ catch { return null; }
+}
 
-    document.addEventListener("keydown", function(event) {
-      if (event.key === "Escape" && modal.classList.contains("open")) {
-        closeApplication();
-      }
-    });
+function setToken(token) {
+ try {
+  if (token) sessionStorage.setItem("jobconnect_token", token);
+  else sessionStorage.removeItem("jobconnect_token");
+ } catch {}
+}
 
-    document.getElementById("resume").addEventListener("change", function() {
-      const file = this.files[0];
+function setAuthStatus(message, error = false) {
+ authStatus.textContent = message;
+ authStatus.style.color = error ? "#b91c1c" : "#15803d";
+}
 
-      if (!file) return;
+function updateNav(user) {
+ $("loginBtn").hidden = !!user;
+ $("registerBtn").hidden = !!user;
+ $("logoutBtn").hidden = !user;
+ $("welcomeUser").hidden = !user;
+ $("welcomeUser").textContent = user ? "Hi, " + user.name : "";
+}
 
-      if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
-        alert("Please select a PDF resume.");
-        this.value = "";
-        return;
-      }
+function showAuth(mode) {
+ authMode = mode;
+ authForm.reset();
+ setAuthStatus("");
+ const registering = mode === "register";
+ $("authTitle").textContent = registering ? "Create Account" : "Login";
+ $("authSubtitle").textContent = registering ? "Join JobConnect today." : "Welcome back to JobConnect.";
+ $("authSubmit").textContent = registering ? "Create Account" : "Login";
+ $("nameGroup").hidden = !registering;
+ $("authName").required = registering;
+ $("confirmGroup").hidden = !registering;
+ $("confirmPassword").required = registering;
+ $("authPassword").autocomplete = registering ? "new-password" : "current-password";
+ $("switchPrompt").textContent = registering ? "Already have an account?" : "Don't have an account?";
+ $("switchAuth").textContent = registering ? "Login" : "Register";
+ authModal.classList.add("open");
+ $("authEmail").focus();
+}
 
-      if (file.size > 5 * 1024 * 1024) {
-        alert("Your resume must be 5 MB or smaller.");
-        this.value = "";
-      }
-    });
+$("loginBtn").addEventListener("click", () => showAuth("login"));
+$("registerBtn").addEventListener("click", () => showAuth("register"));
+$("switchAuth").addEventListener("click", () => showAuth(authMode === "login" ? "register" : "login"));
+$("closeAuth").addEventListener("click", () => authModal.classList.remove("open"));
+authModal.addEventListener("click", e => { if (e.target === authModal) authModal.classList.remove("open"); });
 
-    form.addEventListener("submit", async function(event) {
-      event.preventDefault();
+async function apiRequest(url, options = {}) {
+ const headers = { ...(options.headers || {}) };
+ if (options.body) headers["Content-Type"] = "application/json";
+ const token = getToken();
+ if (token) headers.Authorization = "Bearer " + token;
 
-      if (!selectedJob) {
-        formStatus.textContent = "Please select a job first.";
-        return;
-      }
+ const response = await fetch(url, { ...options, headers });
+ const data = await response.json().catch(() => ({}));
+ if (!response.ok) throw new Error(data.message || data.error || "Request failed. Please try again.");
+ return data;
+}
 
-      if (!form.reportValidity()) return;
+authForm.addEventListener("submit", async e => {
+ e.preventDefault();
+ if (!authForm.reportValidity()) return;
 
-      const resume = document.getElementById("resume").files[0];
+ const email = $("authEmail").value.trim().toLowerCase();
+ const password = $("authPassword").value;
+ const registering = authMode === "register";
 
-      if (resume && (resume.type !== "application/pdf" ||
-          !resume.name.toLowerCase().endsWith(".pdf") ||
-          resume.size > 5 * 1024 * 1024)) {
-        formStatus.textContent = "Please select a valid PDF under 5 MB.";
-        formStatus.style.color = "#b91c1c";
-        return;
-      }
+ if (registering && password !== $("confirmPassword").value) {
+  setAuthStatus("Passwords do not match.", true);
+  return;
+ }
 
-      const payload = {
-        applicantName: document.getElementById("applicantName").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        jobTitle: selectedJob.title || "Untitled Job",
-        phone: document.getElementById("phone").value.trim(),
-        coverLetter: document.getElementById("coverLetter").value.trim()
-      };
+ authSubmit.disabled = true;
+ authSubmit.textContent = "Please wait...";
+ setAuthStatus("");
 
-      submitButton.disabled = true;
-      submitButton.textContent = "Submitting...";
-      formStatus.textContent = "Please wait...";
-      formStatus.style.color = "#64748b";
+ try {
+  const body = registering
+   ? { name: $("authName").value.trim(), email, password }
+   : { email, password };
 
-      try {
-        const response = await fetch(APPLICATION_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
+  const data = await apiRequest(AUTH_URL + (registering ? "/register" : "/login"), {
+   method: "POST",
+   body: JSON.stringify(body)
+  });
 
-        const data = await response.json();
+  if (!data.token) throw new Error("The server did not return a login token. Check the backend deployment.");
 
-        if (!response.ok) {
-          throw new Error(data.message || "Application could not be submitted.");
-        }
+  setToken(data.token);
+  const user = data.user || { name: registering ? body.name : email.split("@")[0], email };
+  updateNav(user);
+  authModal.classList.remove("open");
+  alert(registering ? "Account created successfully!" : "Login successful!");
+ } catch (error) {
+  setAuthStatus(error.message || "Unable to connect. Please try again.", true);
+ } finally {
+  authSubmit.disabled = false;
+  authSubmit.textContent = authMode === "register" ? "Create Account" : "Login";
+ }
+});
 
-        formStatus.textContent = "Application submitted successfully!";
-        formStatus.style.color = "#15803d";
+$("logoutBtn").addEventListener("click", () => {
+ setToken(null);
+ updateNav(null);
+ alert("You have logged out.");
+});
 
-        form.reset();
-        selectedJob = null;
-        submitButton.textContent = "Submitted!";
+async function checkSession() {
+ const token = getToken();
+ if (!token) { updateNav(null); return; }
 
-        setTimeout(function() {
-          modal.classList.remove("open");
-          submitButton.disabled = false;
-          submitButton.textContent = "Submit Application";
-          formStatus.textContent = "";
-        }, 1800);
-      } catch (error) {
-        console.error("Application error:", error);
-        formStatus.textContent =
-          error.message || "Unable to submit. Please try again.";
-        formStatus.style.color = "#b91c1c";
-        submitButton.disabled = false;
-        submitButton.textContent = "Submit Application";
-      }
-    });
+ try {
+  const data = await apiRequest(AUTH_URL + "/me");
+  if (data.user) updateNav(data.user);
+  else { setToken(null); updateNav(null); }
+ } catch {
+  setToken(null);
+  updateNav(null);
+ }
+}
 
-    function showJobs(list) {
-      const results = document.getElementById("results");
-      results.replaceChildren();
+function openApplication(job) {
+ selectedJob = job;
+ $("selectedJob").textContent = (job.title || "Job") + " at " + (job.company || "Company");
+ appForm.reset();
+ formStatus.textContent = "";
+ submitApplication.disabled = false;
+ submitApplication.textContent = "Submit Application";
+ applicationModal.classList.add("open");
+ $("applicantName").focus();
+}
 
-      if (list.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = jobs.length === 0
-          ? "No jobs are available right now."
-          : "No matching jobs found. Try another search.";
-        results.appendChild(empty);
-        return;
-      }
+function closeApplication() {
+ if (!submitApplication.disabled) applicationModal.classList.remove("open");
+}
+$("closeModal").addEventListener("click", closeApplication);
+$("cancelApplication").addEventListener("click", closeApplication);
+applicationModal.addEventListener("click", e => { if (e.target === applicationModal) closeApplication(); });
 
-      list.forEach(job => {
-        const card = document.createElement("article");
-        card.className = "job";
+document.addEventListener("keydown", e => {
+ if (e.key === "Escape") {
+  authModal.classList.remove("open");
+  if (!submitApplication.disabled) applicationModal.classList.remove("open");
+ }
+});
 
-        const top = document.createElement("div");
-        top.className = "job-top";
+$("resume").addEventListener("change", function() {
+ const file = this.files[0];
+ if (!file) return;
+ if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
+  alert("Please select a PDF resume.");
+  this.value = "";
+ } else if (file.size > 5 * 1024 * 1024) {
+  alert("Your resume must be 5 MB or smaller.");
+  this.value = "";
+ }
+});
 
-        const icon = document.createElement("div");
-        icon.className = "company-icon";
-        icon.setAttribute("aria-hidden", "true");
-        icon.textContent = String(job.company || "J").trim().charAt(0).toUpperCase() || "J";
+appForm.addEventListener("submit", async e => {
+ e.preventDefault();
+ if (!selectedJob || !appForm.reportValidity()) return;
 
-        const heading = document.createElement("div");
-        const title = document.createElement("h3");
-        title.textContent = job.title || "Untitled Job";
+ const resume = $("resume").files[0];
+ if (resume && (resume.type !== "application/pdf" || !resume.name.toLowerCase().endsWith(".pdf") || resume.size > 5 * 1024 * 1024)) {
+  formStatus.textContent = "Please select a valid PDF under 5 MB.";
+  formStatus.style.color = "#b91c1c";
+  return;
+ }
 
-        const company = document.createElement("p");
-        company.className = "company-name";
-        company.textContent = job.company || "Company not specified";
+ const payload = {
+  applicantName: $("applicantName").value.trim(),
+  email: $("email").value.trim(),
+  jobTitle: selectedJob.title || "Untitled Job",
+  phone: $("phone").value.trim(),
+  coverLetter: $("coverLetter").value.trim()
+ };
 
-        heading.append(title, company);
-        top.append(icon, heading);
+ submitApplication.disabled = true;
+ submitApplication.textContent = "Submitting...";
+ formStatus.textContent = "Please wait...";
 
-        const description = document.createElement("p");
-        description.className = "job-description";
-        description.textContent = job.description || "Explore this opportunity.";
+ try {
+  const response = await fetch(APPLICATION_URL, {
+   method: "POST",
+   headers: { "Content-Type": "application/json" },
+   body: JSON.stringify(payload)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || "Application could not be submitted.");
 
-        const tags = document.createElement("div");
-        tags.className = "job-tags";
+  formStatus.textContent = "Application submitted successfully!";
+  formStatus.style.color = "#15803d";
+  appForm.reset();
+  selectedJob = null;
+  submitApplication.textContent = "Submitted!";
+  setTimeout(() => {
+   applicationModal.classList.remove("open");
+   submitApplication.disabled = false;
+   submitApplication.textContent = "Submit Application";
+   formStatus.textContent = "";
+  }, 1800);
+ } catch (error) {
+  formStatus.textContent = error.message || "Unable to submit. Please try again.";
+  formStatus.style.color = "#b91c1c";
+  submitApplication.disabled = false;
+  submitApplication.textContent = "Submit Application";
+ }
+});
 
-        const location = document.createElement("span");
-        location.className = "tag";
-        location.textContent = "📍 " + (job.location || "Location not specified");
+function showJobs(list) {
+ const results = $("results");
+ results.replaceChildren();
 
-        const type = document.createElement("span");
-        type.className = "tag";
-        type.textContent = job.type || "Job";
+ if (!list.length) {
+  const empty = document.createElement("div");
+  empty.className = "empty-state";
+  empty.textContent = jobs.length ? "No matching jobs found. Try another search." : "No jobs are available right now.";
+  results.appendChild(empty);
+  return;
+ }
 
-        tags.append(location, type);
+ list.forEach(job => {
+  const card = document.createElement("article");
+  card.className = "job";
 
-        const salary = document.createElement("p");
-        salary.className = "salary";
-        salary.textContent = "Salary: " + (job.salary || "Not specified");
+  const top = document.createElement("div");
+  top.className = "job-top";
+  const icon = document.createElement("div");
+  icon.className = "company-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = String(job.company || "J").trim().charAt(0).toUpperCase() || "J";
 
-        const applyButton = document.createElement("button");
-        applyButton.type = "button";
-        applyButton.className = "apply-button";
-        applyButton.textContent = "Apply Now";
-        applyButton.addEventListener("click", function() {
-          openApplication(job);
-        });
+  const heading = document.createElement("div");
+  const title = document.createElement("h3");
+  title.textContent = job.title || "Untitled Job";
+  const company = document.createElement("p");
+  company.className = "company-name";
+  company.textContent = job.company || "Company not specified";
+  heading.append(title, company);
+  top.append(icon, heading);
 
-        card.append(top, description, tags, salary, applyButton);
-        results.appendChild(card);
-      });
-    }
+  const description = document.createElement("p");
+  description.className = "job-description";
+  description.textContent = job.description || "Explore this opportunity.";
 
-    async function loadJobs() {
-      const status = document.getElementById("status");
-      status.textContent = "Loading jobs...";
+  const tags = document.createElement("div");
+  tags.className = "job-tags";
+  const location = document.createElement("span");
+  location.className = "tag";
+  location.textContent = "📍 " + (job.location || "Location not specified");
+  const type = document.createElement("span");
+  type.className = "tag";
+  type.textContent = job.type || "Job";
+  tags.append(location, type);
 
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("Could not load jobs.");
+  const salary = document.createElement("p");
+  salary.className = "salary";
+  salary.textContent = "Salary: " + (job.salary || "Not specified");
 
-        const data = await response.json();
-        if (!Array.isArray(data)) throw new Error("Unexpected jobs data.");
+  const apply = document.createElement("button");
+  apply.type = "button";
+  apply.className = "apply-button";
+  apply.textContent = "Apply Now";
+  apply.addEventListener("click", () => openApplication(job));
 
-        jobs = data;
-        status.textContent = jobs.length +
-          (jobs.length === 1 ? " job available" : " jobs available");
-        showJobs(jobs);
-      } catch (error) {
-        console.error("Loading jobs error:", error);
-        status.textContent = "Unable to load jobs. Please refresh and try again.";
-        status.style.color = "#b91c1c";
-      }
-    }
+  card.append(top, description, tags, salary, apply);
+  results.appendChild(card);
+ });
+}
 
-    function searchJobs() {
-      const query = document.getElementById("search").value.trim().toLowerCase();
+async function loadJobs() {
+ $("status").textContent = "Loading jobs...";
+ try {
+  const response = await fetch(API_URL);
+  if (!response.ok) throw new Error("Could not load jobs.");
+  const data = await response.json();
+  if (!Array.isArray(data)) throw new Error("Unexpected jobs data.");
+  jobs = data;
+  $("status").textContent = jobs.length + (jobs.length === 1 ? " job available" : " jobs available");
+  showJobs(jobs);
+ } catch (error) {
+  $("status").textContent = "Unable to load jobs. Please refresh and try again.";
+  $("status").style.color = "#b91c1c";
+ }
+}
 
-      const filteredJobs = jobs.filter(job => {
-        const text = [
-          job.title, job.company, job.location,
-          job.description, job.type, job.salary
-        ].join(" ").toLowerCase();
+function searchJobs() {
+ const query = $("search").value.trim().toLowerCase();
+ const filtered = jobs.filter(job => [
+  job.title, job.company, job.location, job.description, job.type, job.salary
+ ].join(" ").toLowerCase().includes(query));
+ showJobs(filtered);
+ $("status").textContent = filtered.length + (filtered.length === 1 ? " matching job" : " matching jobs");
+}
+$("searchBtn").addEventListener("click", searchJobs);
+$("search").addEventListener("keydown", e => { if (e.key === "Enter") searchJobs(); });
 
-        return text.includes(query);
-      });
-
-      showJobs(filteredJobs);
-      document.getElementById("status").textContent =
-        filteredJobs.length +
-        (filteredJobs.length === 1 ? " matching job" : " matching jobs");
-    }
-
-    document.getElementById("searchBtn").addEventListener("click", searchJobs);
-
-    document.getElementById("search").addEventListener("keydown", function(event) {
-      if (event.key === "Enter") searchJobs();
-    });
-
-    loadJobs();
-  </script>
+checkSession();
+loadJobs();
+</script>
 </body>
 </html>
