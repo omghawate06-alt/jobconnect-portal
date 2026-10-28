@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGODB_URI, {
   .catch((err) => console.error("MongoDB connection error:", err.message));
 
 app.get("/", (req, res) => {
-  res.send("JobConnect Portal Backend is Running!");
+  res.sendFile(__dirname + "/index.html");
 });
 
 app.get("/api/jobs", async (req, res) => {
