@@ -1,12 +1,11 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JobConnect - Find Jobs</title>                                                                    
-  <link rel="stylesheet" href="style.css">
-
+  <title>JobConnect - Find Jobs</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,7 +20,7 @@
       text-align: center;
     }
     main {
-      max-width: 600px;
+      max-width: 650px;
       margin: 25px auto;
       padding: 16px;
     }
@@ -37,13 +36,15 @@
       background: #2563eb;
       color: white;
       border: none;
+      cursor: pointer;
     }
     .job {
       background: white;
-      margin-top: 12px;
+      margin-top: 14px;
       padding: 16px;
       border-radius: 8px;
     }
+    .error { color: #b91c1c; }
   </style>
 </head>
 <body>
@@ -54,17 +55,17 @@
 
   <main>
     <h2>Search Jobs</h2>
-    <input id="search" placeholder="Enter job title">
+    <input id="search" placeholder="Enter job title or location">
     <button onclick="searchJobs()">Search Jobs</button>
+    <p id="status">Loading jobs...</p>
     <div id="results"></div>
   </main>
 
   <script>
-    const jobs = [
-      { title: "Web Developer", company: "ABC Technologies", location: "Pune" },
-      { title: "Software Developer", company: "Tech Solutions", location: "Mumbai" },
-      { title: "Data Analyst", company: "DataWorks", location: "Pune" }
-    ];
+    const API_URL =
+      "https://jobconnect-portal-2ik0.onrender.com/api/jobs";
+
+    let jobs = [];
 
     function showJobs(list) {
       const results = document.getElementById("results");
@@ -80,29 +81,58 @@
         card.className = "job";
 
         const title = document.createElement("h3");
-        title.textContent = job.title;
+        title.textContent = job.title || "Untitled Job";
 
-        const details = document.createElement("p");
-        details.textContent = job.company + " • " + job.location;
+        const company = document.createElement("p");
+        company.textContent =
+          "Company: " + (job.company || "Not specified");
 
-        card.append(title, details);
+        const location = document.createElement("p");
+        location.textContent =
+          "Location: " + (job.location || "Not specified");
+
+        const description = document.createElement("p");
+        description.textContent = job.description || "";
+
+        const salary = document.createElement("p");
+        salary.textContent = "Salary: " + (job.salary || "Not specified");
+
+        const type = document.createElement("p");
+        type.textContent = "Type: " + (job.type || "Not specified");
+
+        card.append(title, company, location, description, salary, type);
         results.appendChild(card);
       });
     }
 
+    async function loadJobs() {
+      const status = document.getElementById("status");
+
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("Could not load jobs");
+
+        jobs = await response.json();
+        status.textContent = jobs.length + " job(s) available";
+        showJobs(jobs);
+      } catch (error) {
+        status.textContent =
+          "Unable to load jobs. Please refresh and try again.";
+        status.className = "error";
+      }
+    }
+
     function searchJobs() {
-      const query = document.getElementById("search").value
-        .trim().toLowerCase();
+      const query = document.getElementById("search")
+        .value.trim().toLowerCase();
 
       showJobs(jobs.filter(job =>
-        (job.title + " " + job.company + " " + job.location)
-          .toLowerCase().includes(query)
+        [job.title, job.company, job.location, job.description]
+          .join(" ").toLowerCase().includes(query)
       ));
     }
 
-    showJobs(jobs);
-
-<script src="script.js"></script>
-
+    loadJobs();
+  </script>
+</body>
 </html>
-
