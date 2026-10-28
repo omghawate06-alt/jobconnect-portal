@@ -9,7 +9,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+  dbName: "jobconnect"
+})
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("MongoDB connection error:", err.message));
 
