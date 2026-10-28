@@ -12,7 +12,7 @@ const scrypt = promisify(crypto.scrypt);
 app.use(cors());
 app.use(express.json({ limit: "20kb" }));
 
-// ---------------- SECURITY HELPERS ----------------
+// ---------------- SECURITY ----------------
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -26,15 +26,12 @@ function createToken(user) {
   const payload = Buffer.from(
     JSON.stringify({
       sub: user._id.toString(),
-      name: user.name,
-      email: user.email,
       iat: now,
       exp: now + 7 * 24 * 60 * 60
     })
   ).toString("base64url");
 
   const content = `${header}.${payload}`;
-
   const signature = crypto
     .createHmac("sha256", JWT_SECRET)
     .update(content)
@@ -46,13 +43,11 @@ function createToken(user) {
 function requireLogin(req, res, next) {
   if (!JWT_SECRET) {
     return res.status(503).json({
-      message: "Login security is not configured on the server."
+      message: "Login security is not configured."
     });
   }
 
-  const authorization = req.headers.authorization || "";
-  const parts = authorization.split(" ");
-
+  const parts = (req.headers.authorization || "").split(" ");
   if (parts.length !== 2 || parts[0] !== "Bearer") {
     return res.status(401).json({
       message: "Please log in first."
@@ -60,7 +55,6 @@ function requireLogin(req, res, next) {
   }
 
   const tokenParts = parts[1].split(".");
-
   if (tokenParts.length !== 3) {
     return res.status(401).json({
       message: "Invalid login token."
@@ -69,12 +63,10 @@ function requireLogin(req, res, next) {
 
   try {
     const content = `${tokenParts[0]}.${tokenParts[1]}`;
-
     const expected = crypto
       .createHmac("sha256", JWT_SECRET)
       .update(content)
       .digest();
-
     const actual = Buffer.from(tokenParts[2], "base64url");
 
     if (
@@ -89,7 +81,6 @@ function requireLogin(req, res, next) {
     const header = JSON.parse(
       Buffer.from(tokenParts[0], "base64url").toString()
     );
-
     const payload = JSON.parse(
       Buffer.from(tokenParts[1], "base64url").toString()
     );
@@ -102,15 +93,33 @@ function requireLogin(req, res, next) {
       payload.exp <= Math.floor(Date.now() / 1000)
     ) {
       return res.status(401).json({
-        message: "Your login has expired. Please log in again."
+        message: "Login expired. Please log in again."
       });
     }
 
     req.userId = payload.sub;
     next();
-  } catch (error) {
+  } catch {
     return res.status(401).json({
       message: "Invalid login token."
+    });
+  }
+}
+
+async function requireAdmin(req, res, next) {
+  try {
+    const user = await User.findById(req.userId);
+
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({
+        message: "Administrator access required."
+      });
+    }
+
+    next();
+  } catch {
+    res.status(500).json({
+      message: "Could not verify administrator access."
     });
   }
 }
@@ -137,6 +146,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     select: false
   },
+  role: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user"
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -145,11 +159,26 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
+const APPLICATION_STATUSES = [
+  "Submitted",
+  "Under Review",
+  "Shortlisted",
+  "Rejected",
+  "Accepted"
+];
+
 const applicationSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true
+  },
   applicantName: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 100
   },
   email: {
     type: String,
@@ -160,9 +189,19 @@ const applicationSchema = new mongoose.Schema({
   jobTitle: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 200
+  },
+  status: {
+    type: String,
+    enum: APPLICATION_STATUSES,
+    default: "Submitted"
   },
   appliedAt: {
+    type: Date,
+    default: Date.now
+  },
+  statusUpdatedAt: {
     type: Date,
     default: Date.now
   }
@@ -176,17 +215,15 @@ mongoose.connect(process.env.MONGODB_URI, {
   dbName: "jobconnect"
 })
   .then(() => console.log("MongoDB connected successfully"))
-  .catch((err) =>
-    console.error("MongoDB connection error:", err.message)
-  );
+  .catch(err => console.error("MongoDB connection error:", err.message));
 
-// ---------------- REGISTRATION ----------------
+// ---------------- REGISTER ----------------
 
 app.post("/api/auth/register", async (req, res) => {
   try {
     if (!JWT_SECRET) {
       return res.status(503).json({
-        message: "Login security is not configured on the server."
+        message: "Login security is not configured."
       });
     }
 
@@ -210,26 +247,20 @@ app.post("/api/auth/register", async (req, res) => {
 
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
-        message: "Database is not ready. Please try again."
+        message: "Database is not ready."
       });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser = await User.findOne({
-      email: normalizedEmail
-    });
-
-    if (existingUser) {
+    if (await User.findOne({ email: normalizedEmail })) {
       return res.status(409).json({
         message: "An account with this email already exists."
       });
     }
 
     const salt = crypto.randomBytes(16).toString("hex");
-
     const derivedKey = await scrypt(password, salt, 64);
-
     const passwordHash =
       salt + ":" + Buffer.from(derivedKey).toString("hex");
 
@@ -267,7 +298,7 @@ app.post("/api/auth/login", async (req, res) => {
   try {
     if (!JWT_SECRET) {
       return res.status(503).json({
-        message: "Login security is not configured on the server."
+        message: "Login security is not configured."
       });
     }
 
@@ -286,7 +317,7 @@ app.post("/api/auth/login", async (req, res) => {
 
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
-        message: "Database is not ready. Please try again."
+        message: "Database is not ready."
       });
     }
 
@@ -301,7 +332,6 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const [salt, storedHash] = user.passwordHash.split(":");
-
     const derivedKey = await scrypt(password, salt, 64);
     const actualHash = Buffer.from(derivedKey);
     const expectedHash = Buffer.from(storedHash, "hex");
@@ -351,20 +381,20 @@ app.get("/api/auth/me", requireLogin, async (req, res) => {
         email: user.email
       }
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({
       message: "Could not load your account."
     });
   }
 });
 
-// ---------------- WEBSITE HOMEPAGE ----------------
+// ---------------- HOMEPAGE ----------------
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-// ---------------- GET JOBS ----------------
+// ---------------- JOBS ----------------
 
 app.get("/api/jobs", async (req, res) => {
   try {
@@ -380,26 +410,28 @@ app.get("/api/jobs", async (req, res) => {
       .toArray();
 
     res.json(jobs);
-  } catch (error) {
+  } catch {
     res.status(500).json({
-      message: "Could not fetch jobs from MongoDB"
+      message: "Could not fetch jobs from MongoDB."
     });
   }
 });
 
 // ---------------- SUBMIT APPLICATION ----------------
 
-app.post("/api/applications", async (req, res) => {
+app.post("/api/applications", requireLogin, async (req, res) => {
   try {
     const { applicantName, email, jobTitle } = req.body || {};
 
     if (
       typeof applicantName !== "string" ||
       !applicantName.trim() ||
+      applicantName.trim().length > 100 ||
       typeof email !== "string" ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
       typeof jobTitle !== "string" ||
-      !jobTitle.trim()
+      !jobTitle.trim() ||
+      jobTitle.trim().length > 200
     ) {
       return res.status(400).json({
         message: "Enter a valid name, email, and job title."
@@ -408,19 +440,35 @@ app.post("/api/applications", async (req, res) => {
 
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
-        message: "Database is not ready. Please try again."
+        message: "Database is not ready."
       });
     }
 
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(401).json({
+        message: "Please log in again."
+      });
+    }
+
+    // The authenticated user's ID and email are taken from the account,
+    // not trusted from the browser.
     const application = await Application.create({
-      applicantName: applicantName.trim(),
-      email: email.trim().toLowerCase(),
-      jobTitle: jobTitle.trim()
+      userId: user._id,
+      applicantName: user.name,
+      email: user.email,
+      jobTitle: jobTitle.trim(),
+      status: "Submitted"
     });
 
     res.status(201).json({
       message: "Application submitted successfully!",
-      applicationId: application._id
+      application: {
+        id: application._id,
+        jobTitle: application.jobTitle,
+        status: application.status,
+        appliedAt: application.appliedAt
+      }
     });
   } catch (error) {
     console.error("Application save error:", error.message);
@@ -430,10 +478,96 @@ app.post("/api/applications", async (req, res) => {
   }
 });
 
+// ---------------- MY APPLICATIONS ----------------
+
+app.get("/api/applications/my", requireLogin, async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: "Database is not ready."
+      });
+    }
+
+    const applications = await Application.find({
+      userId: req.userId
+    })
+      .select("jobTitle status appliedAt statusUpdatedAt")
+      .sort({ appliedAt: -1 })
+      .lean();
+
+    res.json({
+      applications: applications.map(item => ({
+        id: item._id,
+        jobTitle: item.jobTitle,
+        status: item.status,
+        appliedAt: item.appliedAt,
+        statusUpdatedAt: item.statusUpdatedAt
+      }))
+    });
+  } catch (error) {
+    console.error("My applications error:", error.message);
+    res.status(500).json({
+      message: "Could not load your applications."
+    });
+  }
+});
+
+// ---------------- ADMIN: UPDATE STATUS ----------------
+
+// Only a database user explicitly assigned role "admin" can use this.
+app.patch(
+  "/api/applications/:id/status",
+  requireLogin,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { status } = req.body || {};
+
+      if (!APPLICATION_STATUSES.includes(status)) {
+        return res.status(400).json({
+          message: "Choose a valid application status."
+        });
+      }
+
+      if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({
+          message: "Invalid application ID."
+        });
+      }
+
+      const application = await Application.findByIdAndUpdate(
+        req.params.id,
+        {
+          $set: {
+            status,
+            statusUpdatedAt: new Date()
+          }
+        },
+        { new: true, runValidators: true }
+      ).select("jobTitle status appliedAt statusUpdatedAt");
+
+      if (!application) {
+        return res.status(404).json({
+          message: "Application not found."
+        });
+      }
+
+      res.json({
+        message: "Application status updated.",
+        application
+      });
+    } catch (error) {
+      console.error("Status update error:", error.message);
+      res.status(500).json({
+        message: "Could not update application status."
+      });
+    }
+  }
+);
+
 // ---------------- START SERVER ----------------
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
