@@ -122,15 +122,25 @@
       }
     }
 
-    function searchJobs() {
-      const query = document.getElementById("search")
-        .value.trim().toLowerCase();
+    
+function searchJobs() {
+  const query = document.getElementById("search").value.trim().toLowerCase();
 
-      showJobs(jobs.filter(job =>
-        [job.title, job.company, job.location, job.description]
-          .join(" ").toLowerCase().includes(query)
-      ));
-    }
+  const filteredJobs = jobs.filter(job => {
+    const title = String(job.title || "").toLowerCase();
+    const company = String(job.company || "").toLowerCase();
+    const location = String(job.location || "").toLowerCase();
+    const description = String(job.description || "").toLowerCase();
+
+    return title.includes(query) ||
+           company.includes(query) ||
+           location.includes(query) ||
+           description.includes(query);
+  });
+
+  showJobs(filteredJobs);
+}
+
 
     loadJobs();
   </script>
