@@ -100,7 +100,14 @@
         const type = document.createElement("p");
         type.textContent = "Type: " + (job.type || "Not specified");
 
-        card.append(title, company, location, description, salary, type);
+        const applyBtn = document.createElement("button");
+applyBtn.textContent = "Apply Now";
+
+applyBtn.onclick = function () {
+  alert("Thank you for your interest! Please contact JobConnect to apply.");
+};
+
+card.appendChild(applyBtn);
         results.appendChild(card);
       });
     }
