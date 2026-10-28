@@ -56,7 +56,7 @@
   <main>
     <h2>Search Jobs</h2>
     <input id="search" placeholder="Enter job title or location">
-    <button onclick="searchJobs()">Search Jobs</button>
+    <button type="button" id="searchBtn">Search Jobs</button>
     <p id="status">Loading jobs...</p>
     <div id="results"></div>
   </main>
@@ -142,7 +142,8 @@ function searchJobs() {
 }
 
 
-    loadJobs();
+  document.getElementById("searchBtn").addEventListener("click", searchJobs);
+loadJobs();
   </script>
 </body>
 </html>
