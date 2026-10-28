@@ -6,6 +6,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JobConnect - Find Jobs</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,17 +14,20 @@
       background: #f1f5f9;
       color: #1e293b;
     }
+
     header {
       background: #173b70;
       color: white;
       padding: 24px 16px;
       text-align: center;
     }
+
     main {
       max-width: 650px;
       margin: 25px auto;
       padding: 16px;
     }
+
     input, button {
       box-sizing: border-box;
       width: 100%;
@@ -31,22 +35,31 @@
       margin: 8px 0;
       border-radius: 6px;
     }
-    input { border: 1px solid #cbd5e1; }
+
+    input {
+      border: 1px solid #cbd5e1;
+    }
+
     button {
       background: #2563eb;
       color: white;
       border: none;
       cursor: pointer;
     }
+
     .job {
       background: white;
       margin-top: 14px;
       padding: 16px;
       border-radius: 8px;
     }
-    .error { color: #b91c1c; }
+
+    .error {
+      color: #b91c1c;
+    }
   </style>
 </head>
+
 <body>
   <header>
     <h1>JobConnect</h1>
@@ -55,8 +68,14 @@
 
   <main>
     <h2>Search Jobs</h2>
-    <input id="search" placeholder="Enter job title or location">
+
+    <input
+      id="search"
+      placeholder="Enter job title or location"
+    >
+
     <button type="button" id="searchBtn">Search Jobs</button>
+
     <p id="status">Loading jobs...</p>
     <div id="results"></div>
   </main>
@@ -64,6 +83,9 @@
   <script>
     const API_URL =
       "https://jobconnect-portal-2ik0.onrender.com/api/jobs";
+
+    const APPLICATION_URL =
+      "https://jobconnect-portal-2ik0.onrender.com/api/applications";
 
     let jobs = [];
 
@@ -95,58 +117,74 @@
         description.textContent = job.description || "";
 
         const salary = document.createElement("p");
-        salary.textContent = "Salary: " + (job.salary || "Not specified");
+        salary.textContent =
+          "Salary: " + (job.salary || "Not specified");
 
         const type = document.createElement("p");
-        type.textContent = "Type: " + (job.type || "Not specified");
+        type.textContent =
+          "Type: " + (job.type || "Not specified");
 
         const applyBtn = document.createElement("button");
-applyBtn.textContent = "Apply Now";
+        applyBtn.textContent = "Apply Now";
 
-applyBtn.onclick = async function () {
-  const applicantName = prompt("Enter your full name:");
-  if (!applicantName || !applicantName.trim()) {
-    alert("Please enter your name.");
-    return;
-  }
+        applyBtn.onclick = async function () {
+          const applicantName = prompt("Enter your full name:");
 
-  const email = prompt("Enter your email address:");
-  if (!email || !email.trim()) {
-    alert("Please enter your email.");
-    return;
-  }
+          if (!applicantName || !applicantName.trim()) {
+            alert("Please enter your name.");
+            return;
+          }
 
-  try {
-    const response = await fetch(
-      "https://jobconnect-portal-2ik0.onrender.com/api/applications",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          applicantName: applicantName.trim(),
-          email: email.trim(),
-          jobTitle: job.title
-        })
-      }
-    );
+          const email = prompt("Enter your email address:");
 
-    const data = await response.json();
+          if (!email || !email.trim()) {
+            alert("Please enter your email.");
+            return;
+          }
 
-    if (response.ok) {
-      alert("Application submitted successfully!");
-    } else {
-      alert(data.message || "Application could not be submitted.");
-    }
-  } catch (error) {
-    alert("Unable to submit application. Please try again.");
-  }
-};
-  alert("Thank you for your interest! Please contact JobConnect to apply.");
-};
+          applyBtn.disabled = true;
+          applyBtn.textContent = "Submitting...";
 
-card.appendChild(applyBtn);
+          try {
+            const response = await fetch(APPLICATION_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                applicantName: applicantName.trim(),
+                email: email.trim(),
+                jobTitle: job.title
+              })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(
+                data.message || "Application could not be submitted."
+              );
+            }
+
+            alert("Application submitted successfully!");
+          } catch (error) {
+            alert(error.message || "Unable to submit application.");
+          } finally {
+            applyBtn.disabled = false;
+            applyBtn.textContent = "Apply Now";
+          }
+        };
+
+        card.append(
+          title,
+          company,
+          location,
+          description,
+          salary,
+          type,
+          applyBtn
+        );
+
         results.appendChild(card);
       });
     }
@@ -154,42 +192,70 @@ card.appendChild(applyBtn);
     async function loadJobs() {
       const status = document.getElementById("status");
 
+      status.textContent = "Loading jobs...";
+      status.className = "";
+
       try {
         const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("Could not load jobs");
 
-        jobs = await response.json();
+        if (!response.ok) {
+          throw new Error("Could not load jobs.");
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("Unexpected jobs data.");
+        }
+
+        jobs = data;
         status.textContent = jobs.length + " job(s) available";
         showJobs(jobs);
       } catch (error) {
+        console.error("Loading jobs error:", error);
+
         status.textContent =
           "Unable to load jobs. Please refresh and try again.";
         status.className = "error";
       }
     }
 
-    
-function searchJobs() {
-  const query = document.getElementById("search").value.trim().toLowerCase();
+    function searchJobs() {
+      const query = document
+        .getElementById("search")
+        .value.trim().toLowerCase();
 
-  const filteredJobs = jobs.filter(job => {
-    const title = String(job.title || "").toLowerCase();
-    const company = String(job.company || "").toLowerCase();
-    const location = String(job.location || "").toLowerCase();
-    const description = String(job.description || "").toLowerCase();
+      const filteredJobs = jobs.filter(job => {
+        const title = String(job.title || "").toLowerCase();
+        const company = String(job.company || "").toLowerCase();
+        const location = String(job.location || "").toLowerCase();
+        const description = String(job.description || "").toLowerCase();
 
-    return title.includes(query) ||
-           company.includes(query) ||
-           location.includes(query) ||
-           description.includes(query);
-  });
+        return (
+          title.includes(query) ||
+          company.includes(query) ||
+          location.includes(query) ||
+          description.includes(query)
+        );
+      });
 
-  showJobs(filteredJobs);
-}
+      showJobs(filteredJobs);
+    }
 
+    document
+      .getElementById("searchBtn")
+      .addEventListener("click", searchJobs);
 
-  document.getElementById("searchBtn").addEventListener("click", searchJobs);
-loadJobs();
+    document
+      .getElementById("search")
+      .addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          searchJobs();
+        }
+      });
+
+    loadJobs();
   </script>
 </body>
 </html>
+
