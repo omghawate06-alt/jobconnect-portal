@@ -103,7 +103,46 @@
         const applyBtn = document.createElement("button");
 applyBtn.textContent = "Apply Now";
 
-applyBtn.onclick = function () {
+applyBtn.onclick = async function () {
+  const applicantName = prompt("Enter your full name:");
+  if (!applicantName || !applicantName.trim()) {
+    alert("Please enter your name.");
+    return;
+  }
+
+  const email = prompt("Enter your email address:");
+  if (!email || !email.trim()) {
+    alert("Please enter your email.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "https://jobconnect-portal-2ik0.onrender.com/api/applications",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          applicantName: applicantName.trim(),
+          email: email.trim(),
+          jobTitle: job.title
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert("Application submitted successfully!");
+    } else {
+      alert(data.message || "Application could not be submitted.");
+    }
+  } catch (error) {
+    alert("Unable to submit application. Please try again.");
+  }
+};
   alert("Thank you for your interest! Please contact JobConnect to apply.");
 };
 
